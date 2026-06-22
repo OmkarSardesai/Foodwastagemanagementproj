@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>User Dashboard</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+<nav>
+
+<h2>User Dashboard</h2>
+
+
+<button onclick="logout()">
+Logout
+</button>
+
+<button id="manageBtn" onclick="toggleManage()">Manage</button>
+
+
+</nav>
+
+
+
+<div class="dashboard">
+
+
+<h1>
+Food Available
+</h1>
+
+
+<div id="userFood"></div>
+
+
+</div>
+
+
+<!-- Manage panel (hidden by default) -->
+<div id="managePanel" style="display:none; padding:16px; border-top:1px solid #ddd; background:#fafafa;">
+	<h3>Manage: View Logins</h3>
+	<div style="margin-bottom:8px;">
+		<button onclick="loadUsersByRole('user')">View Users</button>
+		<button onclick="loadUsersByRole('hotel')">View Hotels</button>
+		<button onclick="loadUsersByRole('ngo')">View NGOs</button>
+		<button onclick="hideManage()">Close</button>
+	</div>
+
+	<div id="manageList"></div>
+
+	<hr />
+	<h3>History</h3>
+	<div style="margin-bottom:8px;"><button onclick="loadHistory()">Show Distribution History</button></div>
+	<div id="historyTableContainer"></div>
+
+</div>
+
+
+
+<script src="script.js"></script>
+
+
+</body>
+
+</html>

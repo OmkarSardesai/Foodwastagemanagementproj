@@ -1,0 +1,18 @@
+node_modules/
+.env
+*.log
+.DS_Store
+.vscode/
+dist/
+coverage/
+package-lock.json
+npm-debug.log
+/.idea/
+*.sqlite
+*.db
+# OS files
+Thumbs.db
+Desktop.ini
+
+# OneDrive temp
+~$*

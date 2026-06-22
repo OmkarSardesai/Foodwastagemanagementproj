@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Hotel Dashboard</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+<nav>
+
+<h2>Hotel Dashboard</h2>
+
+<button onclick="logout()">
+Logout
+</button>
+
+</nav>
+
+
+
+<div class="dashboard">
+
+
+<h2>Add Remaining Food</h2>
+
+
+<input id="foodName"
+placeholder="Food Name">
+
+
+<input id="quantity"
+placeholder="Quantity">
+
+
+<input id="location"
+placeholder="Pickup Location">
+
+
+<input id="expiry"
+type="datetime-local">
+
+
+<button onclick="addFood()">
+Add Food
+</button>
+
+
+
+<h2>Your Donations</h2>
+
+
+<div id="foodList"></div>
+
+
+</div>
+
+
+
+<script src="script.js"></script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,153 @@
+// Food Wastage Management System - backend
+const express = require('express');
+const mysql = require('mysql2');
+const cors = require('cors');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// MySQL connection
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: 'Omkar@2005',
+  database: 'food_waste_proj'
+});
+
+db.connect(err => {
+  if (err) return console.error('DB connect error:', err);
+  console.log('MySQL Connected');
+});
+
+// Ensure `history` table exists and backfill from accepted food entries
+function ensureHistoryTable() {
+  const create = `CREATE TABLE IF NOT EXISTS history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    food_id INT,
+    hotel_id INT,
+    ngo_id INT,
+    quantity VARCHAR(255),
+    location VARCHAR(255),
+    food_name VARCHAR(255),
+    distributed_at DATETIME
+  )`;
+
+  db.query(create, (err) => {
+    if (err) return console.warn('Failed to ensure history table', err);
+    // Backfill: insert accepted food rows not already in history
+    const backfill = `INSERT INTO history (food_id, hotel_id, ngo_id, quantity, location, food_name, distributed_at)
+      SELECT f.food_id, f.hotel_id, NULL, f.quantity, f.location, f.food_name, NOW()
+      FROM food f
+      LEFT JOIN history h ON h.food_id = f.food_id
+      WHERE f.status='Accepted' AND h.id IS NULL`;
+    db.query(backfill, (err2) => {
+      if (err2) return console.warn('Backfill failed', err2);
+      console.log('History table ensured and backfilled');
+    });
+  });
+}
+
+ensureHistoryTable();
+
+// REGISTER
+app.post('/register', (req, res) => {
+  const { name, email, password, role } = req.body;
+  const sql = 'INSERT INTO userslogin(name,email,password,role) VALUES(?,?,?,?)';
+  db.query(sql, [name, email, password, role], (err) => {
+    if (err) return res.json({ success: false, message: 'Email already exists' });
+    res.json({ success: true, message: 'Registration successful' });
+  });
+});
+
+// LOGIN
+app.post('/login', (req, res) => {
+  const { email, password } = req.body;
+  const sql = 'SELECT * FROM userslogin WHERE email=? AND password=?';
+  db.query(sql, [email, password], (err, result) => {
+    if (err) return res.json({ success: false, message: 'DB error' });
+    if (result && result.length > 0) return res.json({ success: true, user: result[0] });
+    res.json({ success: false, message: 'Invalid email or password' });
+  });
+});
+
+// ADD FOOD (HOTEL)
+app.post('/food/add', (req, res) => {
+  const { hotel_id, foodName, quantity, location, expiry } = req.body;
+  const sql = `INSERT INTO food (hotel_id,food_name,quantity,location,expiry,status) VALUES(?,?,?,?,?,'Available')`;
+  db.query(sql, [hotel_id, foodName, quantity, location, expiry], (err) => {
+    if (err) return res.json({ success: false });
+    res.json({ success: true, message: 'Food Added' });
+  });
+});
+
+// SHOW ALL FOOD
+app.get('/food', (req, res) => {
+  db.query('SELECT * FROM food', (err, result) => {
+    if (err) return res.json([]);
+    res.json(result);
+  });
+});
+
+// NGO AVAILABLE FOOD
+app.get('/food/available', (req, res) => {
+  db.query("SELECT * FROM food WHERE status='Available'", (err, result) => {
+    if (err) return res.json([]);
+    res.json(result);
+  });
+});
+
+// NGO ACCEPT FOOD (updates status)
+app.post('/donation/accept', (req, res) => {
+  const { food_id, ngo_id } = req.body;
+  db.query("UPDATE food SET status='Accepted' WHERE food_id=?", [food_id], (err) => {
+    if (err) return res.json({ success: false });
+    res.json({ success: true, message: 'Donation Accepted' });
+  });
+});
+
+// Record history: when donation accepted, insert into `history` table
+app.post('/donation/accept-record', (req, res) => {
+  const { food_id, ngo_id } = req.body;
+  db.query('SELECT * FROM food WHERE food_id=?', [food_id], (err, foodRes) => {
+    if (err || !foodRes || foodRes.length === 0) return res.json({ success: false });
+    const food = foodRes[0];
+    const insert = `INSERT INTO history (food_id, hotel_id, ngo_id, quantity, location, food_name, distributed_at) VALUES (?,?,?,?,?,?,NOW())`;
+    db.query(insert, [food_id, food.hotel_id, ngo_id, food.quantity, food.location, food.food_name], (err2) => {
+      if (err2) return res.json({ success: false });
+      res.json({ success: true, message: 'Recorded' });
+    });
+  });
+});
+
+// GET users
+app.get('/users', (req, res) => {
+  db.query('SELECT * FROM userslogin', (err, result) => {
+    if (err) return res.json([]);
+    res.json(result);
+  });
+});
+
+// DELETE user
+app.delete('/users/:id', (req, res) => {
+  const id = req.params.id;
+  db.query('DELETE FROM userslogin WHERE id=?', [id], (err) => {
+    if (err) return res.json({ success: false, message: 'Delete failed' });
+    res.json({ success: true, message: 'User removed' });
+  });
+});
+
+// GET history
+app.get('/history', (req, res) => {
+  const sql = `SELECT h.*, u.name as ngo_name, f.food_name, f.location, f.quantity, h.distributed_at FROM history h LEFT JOIN userslogin u ON h.ngo_id=u.id LEFT JOIN food f ON h.food_id=f.food_id ORDER BY h.distributed_at DESC`;
+  db.query(sql, (err, result) => {
+    if (err) return res.json([]);
+    res.json(result);
+  });
+});
+
+// SERVER START
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
