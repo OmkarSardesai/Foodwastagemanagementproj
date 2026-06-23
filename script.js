@@ -1,4 +1,6 @@
 // Client-side script for login and basic navigation
+// Use remote API when deployed to Render
+const BASE_URL = 'https://foodwastagemanagementproj.onrender.com';
 async function loginUser() {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value.trim();
@@ -9,7 +11,7 @@ async function loginUser() {
   }
 
   try {
-    const res = await fetch('http://localhost:5000/login', {
+    const res = await fetch(BASE_URL + '/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -55,7 +57,7 @@ async function registerUser() {
   }
 
   try {
-    const res = await fetch('http://localhost:5000/register', {
+    const res = await fetch(BASE_URL + '/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password, role })
@@ -108,7 +110,7 @@ async function addFood() {
   }
 
   try {
-    const res = await fetch('http://localhost:5000/food/add', {
+    const res = await fetch(BASE_URL + '/food/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ hotel_id, foodName, quantity, location, expiry })
@@ -154,7 +156,7 @@ async function loadHotelFood() {
   if (!userId) return logout();
 
   try {
-    const res = await fetch('http://localhost:5000/food');
+    const res = await fetch(BASE_URL + '/food');
     const list = await res.json();
     const container = document.getElementById('foodList');
     container.innerHTML = '';
@@ -173,7 +175,7 @@ async function loadNgoFood() {
   if (!userId) return logout();
 
   try {
-    const res = await fetch('http://localhost:5000/food/available');
+    const res = await fetch(BASE_URL + '/food/available');
     const list = await res.json();
     const container = document.getElementById('ngoFood');
     container.innerHTML = '';
@@ -191,7 +193,7 @@ window.loadNgoFood = loadNgoFood;
 
 async function loadUserFood() {
   try {
-    const res = await fetch('http://localhost:5000/food/available');
+    const res = await fetch(BASE_URL + '/food/available');
     const list = await res.json();
     const container = document.getElementById('userFood');
     container.innerHTML = '';
@@ -223,7 +225,7 @@ function hideManage() {
 
 async function loadUsersByRole(role) {
   try {
-    const res = await fetch('http://localhost:5000/users');
+    const res = await fetch(BASE_URL + '/users');
     const list = await res.json();
     const container = document.getElementById('manageList');
     container.innerHTML = '';
@@ -267,7 +269,7 @@ async function loadUsersByRole(role) {
 async function removeUser(id) {
   if (!confirm('Remove this user?')) return;
   try {
-    const res = await fetch(`http://localhost:5000/users/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${BASE_URL}/users/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (data.success) {
       alert(data.message || 'Removed');
@@ -284,7 +286,7 @@ async function removeUser(id) {
 
 async function loadHistory() {
   try {
-    const res = await fetch('http://localhost:5000/history');
+    const res = await fetch(BASE_URL + '/history');
     const list = await res.json();
     const container = document.getElementById('historyTableContainer');
     container.innerHTML = '';
@@ -329,7 +331,7 @@ async function acceptDonation(food_id) {
   if (!ngo_id) return logout();
 
   try {
-    const res = await fetch('http://localhost:5000/donation/accept', {
+    const res = await fetch(BASE_URL + '/donation/accept', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ food_id, ngo_id })
@@ -339,7 +341,7 @@ async function acceptDonation(food_id) {
       alert(data.message || 'Donation accepted');
       // record history
       try {
-        await fetch('http://localhost:5000/donation/accept-record', {
+        await fetch(BASE_URL + '/donation/accept-record', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ food_id, ngo_id })
