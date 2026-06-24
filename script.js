@@ -1,6 +1,12 @@
 // Client-side script for login and basic navigation
-// Use remote API when deployed to Render
-const BASE_URL = 'https://foodwastagemanagementproj.onrender.com';
+// Determine API base dynamically:
+// - If running on `localhost` use local backend `http://localhost:5000`
+// - If `window.API_BASE_OVERRIDE` is set (e.g. injected in HTML), use that
+// - Otherwise use the current page origin (works when backend serves the frontend)
+const _isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const BASE_URL = _isLocal
+  ? 'http://localhost:5000'
+  : (window.API_BASE_OVERRIDE || window.location.origin);
 async function loginUser() {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value.trim();

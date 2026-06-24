@@ -9,6 +9,20 @@ Render (recommended)
   - Start command: `node backend/server.js`
   - Add environment variables (recommended): `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME`, and `PORT` if desired.
 
+Client configuration (API base URL)
+- The client now auto-selects the API base URL:
+  - `http://localhost:5000` when running locally (hostname `localhost`)
+  - `window.API_BASE_OVERRIDE` if you inject it in your HTML (useful when frontend hosted separately)
+  - otherwise `window.location.origin` (works when backend serves static files)
+
+Example: to force the client to use your Render app URL, add this near the top of `index.html` (before `script.js`):
+```html
+<script>window.API_BASE_OVERRIDE = 'https://your-service-name.onrender.com';</script>
+<script src="script.js"></script>
+```
+
+Replace `https://your-service-name.onrender.com` with the URL shown in your Render dashboard after deployment.
+
 Local testing
 ```bash
 # install backend deps
