@@ -1,6 +1,9 @@
 // Client-side script for login and basic navigation
-// When served by the backend, use same-origin requests
-const BASE_URL = '';
+// Determine API base dynamically (same logic as script.js)
+const _isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const BASE_URL = _isLocal
+  ? 'http://localhost:5000'
+  : (window.API_BASE_OVERRIDE || window.location.origin);
 async function loginUser() {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value.trim();
