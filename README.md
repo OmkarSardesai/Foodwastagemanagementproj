@@ -1,3 +1,26 @@
+# Food Wastage Management Project — Deploy notes
+
+Quick steps to deploy on Render (recommended) or run locally.
+
+Render (recommended)
+- Push changes to your repository. Render will detect `render.yaml` and use it.
+- If creating the service manually, set:
+  - Build command: `npm --prefix backend install`
+  - Start command: `node backend/server.js`
+  - Add environment variables (recommended): `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME`, and `PORT` if desired.
+
+Local testing
+```bash
+# install backend deps
+npm --prefix backend install
+
+# start backend (or use `npm --prefix backend start`)
+node backend/server.js
+```
+
+Notes
+- `backend/server.js` now reads database credentials from environment variables with sensible defaults.
+- You can review startup configuration in `render.yaml` or `Procfile`.
 Food Wastage Management - Small demo
 
 Quick start

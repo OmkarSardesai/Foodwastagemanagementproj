@@ -3,6 +3,7 @@ const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const path = require('path');
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
@@ -11,12 +12,12 @@ app.use(express.json());
 // Serve frontend static files from ../public
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// MySQL connection
+// MySQL connection (use environment variables when available)
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'Omkar@2005',
-  database: 'food_waste_proj'
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASS || 'Omkar@2005',
+  database: process.env.DB_NAME || 'food_waste_proj'
 });
 
 db.connect(err => {
