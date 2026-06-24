@@ -1,11 +1,15 @@
-// Food Wastage Management System - backend
+// Food Wastage Management System - backend (server.js)
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve frontend static files from ../public
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // MySQL connection
 const db = mysql.createConnection({
@@ -35,7 +39,6 @@ function ensureHistoryTable() {
 
   db.query(create, (err) => {
     if (err) return console.warn('Failed to ensure history table', err);
-    // Backfill: insert accepted food rows not already in history
     const backfill = `INSERT INTO history (food_id, hotel_id, ngo_id, quantity, location, food_name, distributed_at)
       SELECT f.food_id, f.hotel_id, NULL, f.quantity, f.location, f.food_name, NOW()
       FROM food f
@@ -53,21 +56,43 @@ ensureHistoryTable();
 // REGISTER
 app.post('/register', (req, res) => {
   const { name, email, password, role } = req.body;
-  const sql = 'INSERT INTO userslogin(name,email,password,role) VALUES(?,?,?,?)';
-  db.query(sql, [name, email, password, role], (err) => {
-    if (err) return res.json({ success: false, message: 'Email already exists' });
-    res.json({ success: true, message: 'Registration successful' });
+  if (!name || !email || !password || !role) return res.status(400).json({ success: false, message: 'Missing required fields' });
+
+  db.query('SELECT id FROM userslogin WHERE email=?', [email], (err, rows) => {
+    if (err) {
+      console.error('Register select error:', err);
+      return res.status(500).json({ success: false, message: 'DB error' });
+    }
+    if (rows && rows.length > 0) return res.status(409).json({ success: false, message: 'Email already exists' });
+
+    const sql = 'INSERT INTO userslogin(name,email,password,role) VALUES(?,?,?,?)';
+    db.query(sql, [name, email, password, role], (err2, result) => {
+      if (err2) {
+        console.error('Register insert error:', err2);
+        return res.status(500).json({ success: false, message: 'DB error' });
+      }
+      res.json({ success: true, message: 'Registration successful', userId: result.insertId });
+    });
   });
 });
 
 // LOGIN
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ success: false, message: 'Missing email or password' });
+
   const sql = 'SELECT * FROM userslogin WHERE email=? AND password=?';
   db.query(sql, [email, password], (err, result) => {
-    if (err) return res.json({ success: false, message: 'DB error' });
-    if (result && result.length > 0) return res.json({ success: true, user: result[0] });
-    res.json({ success: false, message: 'Invalid email or password' });
+    if (err) {
+      console.error('Login query error:', err);
+      return res.status(500).json({ success: false, message: 'DB error' });
+    }
+    if (result && result.length > 0) {
+      const user = Object.assign({}, result[0]);
+      if (user.password) delete user.password;
+      return res.json({ success: true, user });
+    }
+    res.status(401).json({ success: false, message: 'Invalid email or password' });
   });
 });
 

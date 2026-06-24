@@ -10,13 +10,15 @@ npm install express mysql2 cors
 ```
 
 2. Configure MySQL and create database `food_waste_proj`.
-3. Start backend:
+3. Start backend (serves frontend from `/public`):
 
 ```bash
-node backend/script.js
+cd backend
+npm install
+node server.js
 ```
 
-4. Open the frontend files (`index.html`, `login.html`, `userdashboard.html`, etc.) in a browser (or serve via simple http server).
+4. Open http://localhost:5000 in your browser (or the host/port provided by your cloud provider).
 
 Pushing to GitHub
 
