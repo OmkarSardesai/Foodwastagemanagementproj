@@ -12,21 +12,31 @@ app.use(express.json());
 // Serve frontend static files from ../public
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// MySQL connection (use environment variables when available)
-const db = mysql.createConnection({
+// MySQL connection pool (better for serverless environments like Vercel)
+const db = mysql.createPool({
+  connectionLimit: 5,
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASS || 'Omkar@2005',
-  database: process.env.DB_NAME || 'food_waste_proj'
+  database: process.env.DB_NAME || 'food_waste_proj',
+  waitForConnections: true,
+  enableKeepAlive: true,
+  keepAliveInitialDelayMs: 0
 });
 
-db.connect(err => {
-  if (err) return console.error('DB connect error:', err);
-  console.log('MySQL Connected');
+db.on('connection', () => {
+  console.log('MySQL Pool: New connection established');
+});
+
+db.on('error', (err) => {
+  console.error('MySQL Pool error:', err);
 });
 
 // Ensure `history` table exists and backfill from accepted food entries
-function ensureHistoryTable() {
+let historyTableEnsured = false;
+function ensureHistoryTable(callback) {
+  if (historyTableEnsured) return callback && callback();
+  
   const create = `CREATE TABLE IF NOT EXISTS history (
     id INT AUTO_INCREMENT PRIMARY KEY,
     food_id INT,
@@ -39,20 +49,23 @@ function ensureHistoryTable() {
   )`;
 
   db.query(create, (err) => {
-    if (err) return console.warn('Failed to ensure history table', err);
+    if (err) {
+      console.warn('Failed to ensure history table', err);
+      return callback && callback();
+    }
     const backfill = `INSERT INTO history (food_id, hotel_id, ngo_id, quantity, location, food_name, distributed_at)
       SELECT f.food_id, f.hotel_id, NULL, f.quantity, f.location, f.food_name, NOW()
       FROM food f
       LEFT JOIN history h ON h.food_id = f.food_id
       WHERE f.status='Accepted' AND h.id IS NULL`;
     db.query(backfill, (err2) => {
-      if (err2) return console.warn('Backfill failed', err2);
-      console.log('History table ensured and backfilled');
+      if (err2) console.warn('Backfill failed', err2);
+      else console.log('History table ensured and backfilled');
+      historyTableEnsured = true;
+      callback && callback();
     });
   });
 }
-
-ensureHistoryTable();
 
 // REGISTER
 app.post('/register', (req, res) => {
@@ -165,15 +178,27 @@ app.delete('/users/:id', (req, res) => {
 
 // GET history
 app.get('/history', (req, res) => {
-  const sql = `SELECT h.*, u.name as ngo_name, f.food_name, f.location, f.quantity, h.distributed_at FROM history h LEFT JOIN userslogin u ON h.ngo_id=u.id LEFT JOIN food f ON h.food_id=f.food_id ORDER BY h.distributed_at DESC`;
-  db.query(sql, (err, result) => {
-    if (err) return res.json([]);
-    res.json(result);
+  ensureHistoryTable(() => {
+    const sql = `SELECT h.*, u.name as ngo_name, f.food_name, f.location, f.quantity, h.distributed_at FROM history h LEFT JOIN userslogin u ON h.ngo_id=u.id LEFT JOIN food f ON h.food_id=f.food_id ORDER BY h.distributed_at DESC`;
+    db.query(sql, (err, result) => {
+      if (err) {
+        console.error('History query error:', err);
+        return res.json([]);
+      }
+      res.json(result);
+    });
   });
 });
 
 // SERVER START
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
+// For local development
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+// Export for Vercel serverless
+module.exports = app;
